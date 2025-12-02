@@ -1,0 +1,114 @@
+-- Database Schema for Restaurant, Owner, Food, and Customer Management
+-- Engine: InnoDB is used to enforce FOREIGN KEY constraints for data integrity.
+
+-- 1. OWNERS TABLE
+-- Stores individual owner/user data. Primary key for owner identification.
+CREATE TABLE owners (
+    owner_id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    phone_number VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- 2. RESTAURANTS TABLE
+-- Stores restaurant details and links to the owner (One-to-Many).
+CREATE TABLE restaurants (
+    restaurant_id INT AUTO_INCREMENT PRIMARY KEY,
+    owner_id INT NOT NULL, -- Foreign Key to link to the owner
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    
+    -- *** GEOSPATIAL SEARCH FIELD ***
+    latitude DECIMAL(10, 8) NOT NULL, -- Used in ST_Distance_Sphere calculation
+    longitude DECIMAL(11, 8) NOT NULL, -- Used in ST_Distance_Sphere calculation
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    -- Constraint: Link Restaurant to Owner
+    FOREIGN KEY (owner_id) 
+        REFERENCES owners(owner_id) 
+        ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 3. FOODS TABLE
+-- Stores individual menu items, linked to a specific restaurant (One-to-Many).
+CREATE TABLE foods (
+    food_id INT AUTO_INCREMENT PRIMARY KEY,
+    restaurant_id INT NOT NULL, -- Foreign Key to link to the restaurant
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    
+    -- *** BUDGET RECOMMENDATION FIELDS ***
+    price DECIMAL(10, 2) NOT NULL,
+    budget_category ENUM('Affordable', 'Mid-Range', 'Premium') NOT NULL,
+    
+    is_vegetarian BOOLEAN DEFAULT FALSE,
+    is_vegan BOOLEAN DEFAULT FALSE,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Constraint: Link Food to Restaurant
+    FOREIGN KEY (restaurant_id) 
+        REFERENCES restaurants(restaurant_id) 
+        ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 4. CUSTOMERS TABLE
+-- Stores customer data, including preferences and location data for recommendations.
+CREATE TABLE customers (
+    customer_id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    phone_number VARCHAR(20),
+    
+    -- *** GEOSPATIAL SEARCH FIELDS ***
+    current_latitude DECIMAL(10, 8),
+    current_longitude DECIMAL(11, 8),
+    
+    -- *** BUDGET RECOMMENDATION FIELD ***
+    preferred_budget_category ENUM('Affordable', 'Mid-Range', 'Premium') DEFAULT 'Mid-Range',
+    
+    last_login TIMESTAMP,
+    total_orders INT DEFAULT 0,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- 5. COMPLEMENTARY_FOODS TABLE (Junction Table)
+-- Implements the Many-to-Many relationship for complementary food recommendations.
+CREATE TABLE complementary_foods (
+    food_id INT NOT NULL, -- Main dish ID
+    complementary_food_id INT NOT NULL, -- Suggested complementary dish ID
+    
+    -- Composite Primary Key
+    PRIMARY KEY (food_id, complementary_food_id),
+    
+    -- Constraint 1: Links to the main food item
+    FOREIGN KEY (food_id) 
+        REFERENCES foods(food_id) 
+        ON DELETE CASCADE,
+        
+    -- Constraint 2: Links to the complementary food item
+    FOREIGN KEY (complementary_food_id) 
+        REFERENCES foods(food_id) 
+        ON DELETE CASCADE,
+        
+    -- Prevents a food item from being suggested as a complement to itself
+    CONSTRAINT chk_different_foods CHECK (food_id != complementary_food_id)
+) ENGINE=InnoDB;
+
+
+
+
+
+
+
+
+
+// Store this in your memory... i am making 'Foodie' food‑recommendation website using MySQL, Express, Node, and React, and wants to create controllers for foods, restaurants, and owners, along with routes and simple 3 recommendation algorithms. like the complementary goods  recomendation based on the food search, and based on the location of the user, he will get the suggestion of the resturant based on the nearest 
