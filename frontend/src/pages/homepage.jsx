@@ -92,7 +92,7 @@ const Homepage = () => {
     try {
       const allFoods = [];
       for (const restaurant of restaurants) { // This is inefficient but respects the "no backend changes" rule.
-        const response = await fetch(`${API_BASE_URL}/foods/restaurant/${restaurant.restaurant_id}`);
+        const response = await fetch(`${API_BASE_URL}/restaurants/${restaurant.restaurant_id}/foods`);
         const data = await response.json();
         if (data.success) {
           const foodsWithRestaurant = data.foods.map(food => ({
