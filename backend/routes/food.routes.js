@@ -1,22 +1,18 @@
-
 import express from 'express';
-const router = express.Router();
 import * as foodController from '../controllers/food.controller.js';
 
-// Base route: /api/foods
+// By setting mergeParams: true, this router can access params from its parent router (e.g., :restaurantId)
+const router = express.Router({ mergeParams: true });
 
+// Base route for this router will be something like /api/restaurants/:restaurantId/foods
+
+// GET /api/restaurants/:restaurantId/foods
+router.get('/', foodController.getFoodsByRestaurant);
+
+// POST /api/foods (This will be handled by the main food router in index.js)
 router.post('/', foodController.createFood);
 router.get('/:foodId', foodController.getFoodById);
 router.put('/:foodId', foodController.updateFood);
 router.delete('/:foodId', foodController.deleteFood);
-
-// GET: *** ALGORITHM 2 IMPLEMENTATION *** 
-router.get('/restaurant/:restaurantId/budget', foodController.getFoodsByBudget);
-
-// GET: *** ALGORITHM 3 IMPLEMENTATION *** 
-router.get('/:foodId/complementary', foodController.getComplementaryFoods);
-
-// GET: *** ALGORITHM 4 IMPLEMENTATION ***
-router.get('/:foodId/collaborative-suggestions', foodController.getCollaborativeSuggestions);
 
 export default router;
