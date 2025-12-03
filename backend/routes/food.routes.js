@@ -7,12 +7,14 @@ const router = express.Router({ mergeParams: true });
 // Base route for this router will be something like /api/restaurants/:restaurantId/foods
 
 // GET /api/restaurants/:restaurantId/foods
-router.get('/', foodController.getFoodsByRestaurant);
+router.route('/')
+    .get(foodController.getFoodsByRestaurant)
+    .post(foodController.createFood); // POST /api/restaurants/:restaurantId/foods
 
-// POST /api/foods (This will be handled by the main food router in index.js)
-router.post('/', foodController.createFood);
-router.get('/:foodId', foodController.getFoodById);
-router.put('/:foodId', foodController.updateFood);
-router.delete('/:foodId', foodController.deleteFood);
+// Routes for a specific food item within a restaurant
+router.route('/:foodId')
+    .get(foodController.getFoodById)
+    .put(foodController.updateFood)     // PUT /api/restaurants/:restaurantId/foods/:foodId
+    .delete(foodController.deleteFood); // DELETE /api/restaurants/:restaurantId/foods/:foodId
 
 export default router;

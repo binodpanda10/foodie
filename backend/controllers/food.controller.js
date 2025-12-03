@@ -61,15 +61,16 @@ export const getFoodsByRestaurant = async (req, res) => {
 
 // Update food item details
 export const updateFood = async (req, res) => {
-    const { foodId } = req.params;
+    // Now we get both restaurantId and foodId from the URL params for security
+    const { restaurantId, foodId } = req.params;
     const { name, description, price, budget_category, is_vegetarian, is_vegan } = req.body;
     try {
         const query = `
             UPDATE foods 
             SET name = ?, description = ?, price = ?, budget_category = ?, is_vegetarian = ?, is_vegan = ? 
-            WHERE food_id = ?
+            WHERE food_id = ? AND restaurant_id = ?
         `;
-        const [result] = await db.execute(query, [name, description, price, budget_category, is_vegetarian, is_vegan, foodId]);
+        const [result] = await db.execute(query, [name, description, price, budget_category, is_vegetarian, is_vegan, foodId, restaurantId]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, message: "Food item not found or no changes made." });
@@ -83,9 +84,12 @@ export const updateFood = async (req, res) => {
 
 // Delete food item (cascades to complementary_foods pairings)
 export const deleteFood = async (req, res) => {
-    const { foodId } = req.params;
+    // Get both restaurantId and foodId from params for security
+    const { restaurantId, foodId } = req.params;
     try {
-        const [result] = await db.execute("DELETE FROM foods WHERE food_id = ?", [foodId]);
+        // The WHERE clause now ensures we only delete if the food belongs to the correct restaurant
+        const query = "DELETE FROM foods WHERE food_id = ? AND restaurant_id = ?";
+        const [result] = await db.execute(query, [foodId, restaurantId]);
         
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, message: "Food item not found." });

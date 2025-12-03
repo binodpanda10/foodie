@@ -142,8 +142,8 @@ const OwnerDashboard = () => {
 
     try {
       const url = editMode
-        ? `${API_BASE_URL}/foods/${currentFood.food_id}`
-        : `${API_BASE_URL}/foods`;
+        ? `${API_BASE_URL}/restaurants/${restaurantId}/foods/${currentFood.food_id}`
+        : `${API_BASE_URL}/restaurants/${restaurantId}/foods`;
 
       const method = editMode ? 'PUT' : 'POST';
 
@@ -183,7 +183,7 @@ const OwnerDashboard = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/foods/${foodId}`, {
+      const response = await fetch(`${API_BASE_URL}/restaurants/${restaurantId}/foods/${foodId}`, {
         method: 'DELETE'
       });
 
@@ -366,7 +366,7 @@ const OwnerDashboard = () => {
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <span className="text-2xl font-bold text-orange-600">${food.price}</span>
+                  <span className="text-2xl font-bold text-orange-600">Rs {food.price}</span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEdit(food)}
