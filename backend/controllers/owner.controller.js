@@ -93,8 +93,13 @@ export const loginOwner = async (req, res) => {
         }
 
         // Find the owner by email, this time including the password for comparison
-        const [owner] = await db.execute("SELECT * FROM owners WHERE email = ?", [email]);
-
+        // Also, join with the restaurants table to get the restaurant_id
+        const query = `
+            SELECT o.*, r.restaurant_id 
+            FROM owners o
+            LEFT JOIN restaurants r ON o.owner_id = r.owner_id
+            WHERE o.email = ?`;
+        const [owner] = await db.execute(query, [email]);
         if (owner.length === 0) {
             return res.status(401).json({ success: false, message: "Invalid credentials." }); // Use a generic message
         }
@@ -106,7 +111,12 @@ export const loginOwner = async (req, res) => {
             return res.status(401).json({ success: false, message: "Invalid credentials." });
         }
 
-        res.status(200).json({ success: true, message: "Login successful.", owner_id: storedOwner.owner_id });
+        res.status(200).json({ 
+            success: true, 
+            message: "Login successful.", 
+            owner_id: storedOwner.owner_id,
+            restaurant_id: storedOwner.restaurant_id // Can be null if no restaurant is associated yet
+        });
     } catch (error) {
         console.error("Error during owner login:", error);
         res.status(500).json({ success: false, message: "Server error during login." });

@@ -14,11 +14,14 @@ import foodRoutes from './routes/food.routes.js';
 
 const app = express();
 // Use port from environment variable, default to 3000
-const PORT = process.env.PORT || 3000; 
+const PORT = process.env.PORT || 5000; 
 
 // --- Security Middleware Setup ---
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+    origin: "http://localhost:5173", // Vite frontend
+    credentials: true
+}));
 
 // --- Body Parsing Middleware ---
 app.use(bodyParser.json());

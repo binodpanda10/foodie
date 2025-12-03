@@ -44,6 +44,21 @@ export const getFoodById = async (req, res) => {
     }
 };
 
+// Get all food items for a specific restaurant
+export const getFoodsByRestaurant = async (req, res) => {
+    const { restaurantId } = req.params;
+    try {
+        const query = "SELECT * FROM foods WHERE restaurant_id = ?";
+        const [foods] = await db.execute(query, [restaurantId]);
+        // Use a consistent response format
+        res.status(200).json({ success: true, count: foods.length, foods: foods });
+    } catch (error) {
+        console.error("Error fetching food items for restaurant:", error);
+        res.status(500).json({ success: false, message: "Error fetching food items.", error: error.message });
+    }
+};
+
+
 // Update food item details
 export const updateFood = async (req, res) => {
     const { foodId } = req.params;
