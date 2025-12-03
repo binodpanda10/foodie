@@ -112,3 +112,119 @@ CREATE TABLE complementary_foods (
 
 
 // Store this in your memory... i am making 'Foodie' food‑recommendation website using MySQL, Express, Node, and React, and wants to create controllers for foods, restaurants, and owners, along with routes and simple 3 recommendation algorithms. like the complementary goods  recomendation based on the food search, and based on the location of the user, he will get the suggestion of the resturant based on the nearest 
+
+
+
+-- Disable foreign key checks and set strict mode for safe seeding
+SET FOREIGN_KEY_CHECKS = 0;
+SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
+
+-- -------------------------------------------------------------------------
+-- 1. INSERT COMPLEMENTARY SIDES, DRINKS, BREADS, AND SAUCES (IDs 2101+)
+-- -------------------------------------------------------------------------
+INSERT INTO foods (food_id, restaurant_id, name, description, price, budget_category, is_vegetarian) VALUES
+-- Sauces / Sides
+(2101, 1, 'Spicy Momo Chutney', 'Traditional chili, tomato, and Sichuan pepper dipping sauce.', 50.00, 'Affordable', 1),
+(2102, 1, 'French Fries', 'Crispy potato fries, served with ketchup.', 150.00, 'Affordable', 1),
+(2103, 1, 'Fresh Green Salad', 'Lettuce, cucumber, and tomato with a light vinaigrette.', 180.00, 'Mid-Range', 1),
+(2104, 1, 'Mula ko Achar', 'Sharp, pungent radish pickle (essential for Khana/Sekuwa).', 80.00, 'Affordable', 1),
+(2105, 1, 'Plain Curd', 'Yogurt side for cooling effect.', 70.00, 'Affordable', 1),
+(2106, 1, 'Mint Chutney', 'Cooling green dipping sauce for savory snacks/grills.', 50.00, 'Affordable', 1),
+(2107, 1, 'Tomato Ketchup', 'Classic dipping sauce for international snacks.', 20.00, 'Affordable', 1),
+
+-- Breads
+(2151, 1, 'Butter Naan', 'Soft Indian flatbread topped with butter.', 120.00, 'Affordable', 1),
+(2152, 1, 'Plain Naan', 'Simple oven-baked Indian flatbread.', 100.00, 'Affordable', 1),
+
+-- Cold Drinks
+(2161, 1, 'Coca-Cola (Can)', 'Classic chilled cola drink.', 100.00, 'Affordable', 1),
+(2162, 1, 'Fanta (Can)', 'Orange flavored fizzy drink.', 100.00, 'Affordable', 1),
+(2163, 1, 'Sprite (Can)', 'Lemon-lime flavored fizzy drink.', 100.00, 'Affordable', 1),
+
+-- Hot Drinks
+(2171, 1, 'Milk Tea (Nepali Style)', 'Sweet and spicy chai boiled with milk.', 80.00, 'Affordable', 1),
+(2172, 1, 'Americano', 'Espresso diluted with hot water.', 150.00, 'Mid-Range', 1),
+(2173, 1, 'Espresso', 'A concentrated shot of coffee.', 120.00, 'Mid-Range', 1),
+(2174, 1, 'Cappuccino', 'Espresso mixed with steamed milk and a thick layer of foam.', 220.00, 'Premium', 1);
+
+
+-- -------------------------------------------------------------------------
+-- 2. INSERT MAIN DISHES (IDs 2001+)
+-- -------------------------------------------------------------------------
+INSERT INTO foods (food_id, restaurant_id, name, description, price, budget_category, is_vegetarian) VALUES
+-- Momo & Choumein
+(2001, 1, 'Chicken Momo', 'Steamed chicken dumplings.', 250.00, 'Mid-Range', 0),
+(2002, 1, 'Buff Momo', 'Steamed buff dumplings.', 270.00, 'Mid-Range', 0),
+(2003, 1, 'Chicken Choumein', 'Stir-fried noodles with chicken and vegetables.', 300.00, 'Mid-Range', 0),
+(2004, 1, 'Buff Choumein', 'Stir-fried noodles with buff and vegetables.', 320.00, 'Mid-Range', 0),
+
+-- International Staples
+(2005, 1, 'Margherita Pizza (10")', 'Classic pizza with tomato, mozzarella, and basil.', 650.00, 'Premium', 1),
+(2006, 1, 'Beef Burger', 'Grilled beef patty, lettuce, tomato, cheese, and special sauce.', 450.00, 'Mid-Range', 0),
+
+-- Nepali Staples
+(2007, 1, 'Newari Khaja Set', 'Traditional platter with beaten rice, spiced meat (Choila), and pickle.', 800.00, 'Premium', 0),
+(2008, 1, 'Yomari (2 pcs)', 'Sweet rice dough dumpling filled with molten molasses and sesame seeds.', 200.00, 'Affordable', 1),
+(2009, 1, 'Vegetable Khana Set', 'Rice, Dal, Vegetable Tarkari, and Achar.', 400.00, 'Affordable', 1),
+(2010, 1, 'Chicken Khana Set', 'Rice, Dal, Chicken Curry, and Achar.', 550.00, 'Mid-Range', 0),
+(2011, 1, 'Buff Khana Set', 'Rice, Dal, Buff Curry, and Achar.', 580.00, 'Mid-Range', 0),
+(2012, 1, 'Grill Chicken Sekuwa', 'Charcoal grilled chicken skewers.', 450.00, 'Mid-Range', 0),
+(2013, 1, 'Grill Buff Sekuwa', 'Charcoal grilled buff skewers.', 480.00, 'Mid-Range', 0),
+(2014, 1, 'Mutton Kebab', 'Ground mutton skewers, usually served with bread.', 600.00, 'Premium', 0),
+(2015, 1, 'Chicken Choila', 'Spicy dry marinated and grilled chicken (Newari style).', 350.00, 'Mid-Range', 0),
+(2016, 1, 'Buff Choila', 'Spicy dry marinated and grilled buff (Newari style).', 380.00, 'Mid-Range', 0);
+
+
+-- -------------------------------------------------------------------------
+-- 3. SEEDING COMPLEMENTARY RELATIONSHIPS
+-- -------------------------------------------------------------------------
+
+-- 1. Momo (2001, 2002) Pairings: Chutney, Fries, Cold Drink
+INSERT INTO complementary_foods (food_id, complementary_food_id) VALUES 
+(2001, 2101), (2001, 2102), (2001, 2161), -- Chicken Momo
+(2002, 2101), (2002, 2102), (2002, 2162); -- Buff Momo
+
+-- 2. Choumein (2003, 2004) Pairings: Mint Chutney, Cold Drink
+INSERT INTO complementary_foods (food_id, complementary_food_id) VALUES 
+(2003, 2106), (2003, 2163), -- Chicken Choumein
+(2004, 2106), (2004, 2163); -- Buff Choumein
+
+-- 3. Pizza (2005) Pairings: Green Salad, Cold Drink
+INSERT INTO complementary_foods (food_id, complementary_food_id) VALUES 
+(2005, 2103), (2005, 2161);
+
+-- 4. Burger (2006) Pairings: Fries, Cold Drink, Ketchup
+INSERT INTO complementary_foods (food_id, complementary_food_id) VALUES 
+(2006, 2102), (2006, 2161), (2006, 2107);
+
+-- 5. Newari Khaja Set (2007) Pairings: Achar, Curd, Milk Tea (to settle)
+INSERT INTO complementary_foods (food_id, complementary_food_id) VALUES 
+(2007, 2104), (2007, 2105), (2007, 2171);
+
+-- 6. Yomari (2008) Pairings: Milk Tea (as it's a sweet dessert/snack)
+INSERT INTO complementary_foods (food_id, complementary_food_id) VALUES 
+(2008, 2171);
+
+-- 7. Khana Sets (2009, 2010, 2011) Pairings: Achar, Curd
+INSERT INTO complementary_foods (food_id, complementary_food_id) VALUES 
+(2009, 2104), (2009, 2105), -- Veg Khana
+(2010, 2104), (2010, 2105), -- Chicken Khana
+(2011, 2104), (2011, 2105); -- Buff Khana
+
+-- 8. Grill Sekuwa (2012, 2013) Pairings: Green Salad, Mint Chutney, Cold Drink
+INSERT INTO complementary_foods (food_id, complementary_food_id) VALUES 
+(2012, 2103), (2012, 2106), (2012, 2161), -- Chicken Sekuwa
+(2013, 2103), (2013, 2106), (2013, 2161); -- Buff Sekuwa
+
+-- 9. Kebab (2014) Pairings: Naan, Mint Chutney, Cold Drink
+INSERT INTO complementary_foods (food_id, complementary_food_id) VALUES 
+(2014, 2151), (2014, 2152), (2014, 2106), (2014, 2161);
+
+-- 10. Choila (2015, 2016) Pairings: Mula Achar, Cold Drink (to counter spice)
+INSERT INTO complementary_foods (food_id, complementary_food_id) VALUES 
+(2015, 2104), (2015, 2162), -- Chicken Choila
+(2016, 2104), (2016, 2162); -- Buff Choila
+
+-- Clean up settings
+SET SQL_MODE = 'TRADITIONAL';
+SET FOREIGN_KEY_CHECKS = 1;

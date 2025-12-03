@@ -135,3 +135,102 @@ export const getComplementaryFoods = async (req, res) => {
         res.status(500).json({ success: false, message: "Server Error during complementary search." });
     }
 };
+
+// *** ALGORITHM 4: Item-Based Collaborative Filtering for Complementary Foods ***
+export const getCollaborativeSuggestions = async (req, res) => {
+    const { foodId } = req.params;
+
+    try {
+        // This query finds other food items that are frequently paired in the `complementary_foods` table
+        // with the items that the current `foodId` is paired with.
+        // It's a way of saying "what other items are popular alongside the items that go well with your choice?"
+        const query = `
+            SELECT 
+                f.food_id, 
+                f.name, 
+                f.description, 
+                f.price,
+                COUNT(f.food_id) AS suggestion_score
+            FROM 
+                complementary_foods cf1
+            JOIN 
+                complementary_foods cf2 ON cf1.food_id = cf2.food_id AND cf1.complementary_food_id != cf2.complementary_food_id
+            JOIN 
+                foods f ON cf2.complementary_food_id = f.food_id
+            WHERE 
+                cf1.complementary_food_id = ?
+            GROUP BY 
+                f.food_id, f.name, f.description, f.price
+            ORDER BY 
+                suggestion_score DESC
+            LIMIT 5; -- Limit to the top 5 suggestions
+        `;
+
+        const [results] = await db.execute(query, [foodId]);
+
+        res.status(200).json({ success: true, message: `Collaborative filtering suggestions for food ID ${foodId}`, data: results });
+    } catch (error) {
+        console.error("Error fetching collaborative suggestions:", error);
+        res.status(500).json({ success: false, message: "Server Error during collaborative filtering." });
+    }
+};
+
+// *** ALGORITHM 5: User-Based Collaborative Filtering ***
+export const getPersonalizedSuggestions = async (req, res) => {
+    const { customerId } = req.params;
+    const minRating = 4; // Consider ratings of 4 or 5 as "liked"
+
+    try {
+        // This query implements user-based collaborative filtering.
+        // 1. Find all foods the target customer has rated highly (`target_user_likes`).
+        // 2. Find other customers who also rated those same foods highly (`similar_users`).
+        // 3. Find what other foods those similar users liked.
+        // 4. Exclude foods the target user has already rated.
+        // 5. Rank suggestions by how many similar users liked them.
+        const query = `
+            SELECT
+                f.food_id,
+                f.name,
+                f.description,
+                f.price,
+                COUNT(f.food_id) AS suggestion_score,
+                AVG(fr.rating) AS average_rating
+            FROM
+                food_ratings fr
+            JOIN
+                foods f ON fr.food_id = f.food_id
+            WHERE
+                -- Find items liked by users with similar tastes
+                fr.customer_id IN (
+                    SELECT DISTINCT fr2.customer_id
+                    FROM food_ratings fr1
+                    JOIN food_ratings fr2 ON fr1.food_id = fr2.food_id AND fr1.customer_id != fr2.customer_id
+                    WHERE fr1.customer_id = ? AND fr1.rating >= ?
+                )
+                -- Only recommend items that similar users rated highly
+                AND fr.rating >= ?
+                -- Exclude items the target user has already rated
+                AND fr.food_id NOT IN (
+                    SELECT food_id FROM food_ratings WHERE customer_id = ?
+                )
+            GROUP BY
+                f.food_id, f.name, f.description, f.price
+            ORDER BY
+                suggestion_score DESC, average_rating DESC
+            LIMIT 10;
+        `;
+
+        const [results] = await db.execute(query, [customerId, minRating, minRating, customerId]);
+
+        res.status(200).json({
+            success: true,
+            message: `Personalized suggestions for customer ID ${customerId}`,
+            count: results.length,
+            data: results
+        });
+
+    } catch (error) {
+        console.error("Error fetching personalized suggestions:", error);
+        res.status(500).json({ success: false, message: "Server Error during personalized recommendation." });
+    }
+};
