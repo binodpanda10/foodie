@@ -1,11 +1,20 @@
 import db from '../config/db.config.js';
+import bcrypt from 'bcrypt';
+
+const saltRounds = 10; // Standard practice for bcrypt hashing
 
 // Create a new owner
 export const createOwner = async (req, res) => {
-    const { first_name, last_name, email, phone_number } = req.body;
+    const { first_name, last_name, email, password, phone_number } = req.body;
     try {
-        const query = "INSERT INTO owners (first_name, last_name, email, phone_number) VALUES (?, ?, ?, ?)";
-        const [result] = await db.execute(query, [first_name, last_name, email, phone_number]);
+        if (!password) {
+            return res.status(400).json({ success: false, message: "Password is required." });
+        }
+        // Hash the password before storing
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+        const query = "INSERT INTO owners (first_name, last_name, email, password, phone_number) VALUES (?, ?, ?, ?, ?)";
+        const [result] = await db.execute(query, [first_name, last_name, email, hashedPassword, phone_number]);
         res.status(201).json({ success: true, message: "Owner created successfully.", owner_id: result.insertId });
     } catch (error) {
         console.error("Error creating owner:", error);
@@ -16,7 +25,8 @@ export const createOwner = async (req, res) => {
 // Get all owners
 export const getAllOwners = async (req, res) => {
     try {
-        const [owners] = await db.execute("SELECT owner_id, first_name, last_name, email, phone_number FROM owners");
+        // Exclude password from the result for security
+        const [owners] = await db.execute("SELECT owner_id, first_name, last_name, email, phone_number, created_at FROM owners");
         res.status(200).json({ success: true, count: owners.length, data: owners });
     } catch (error) {
         console.error("Error fetching owners:", error);
@@ -28,7 +38,8 @@ export const getAllOwners = async (req, res) => {
 export const getOwnerById = async (req, res) => {
     const { ownerId } = req.params;
     try {
-        const [owner] = await db.execute("SELECT owner_id, first_name, last_name, email, phone_number FROM owners WHERE owner_id = ?", [ownerId]);
+        // Exclude password from the result
+        const [owner] = await db.execute("SELECT owner_id, first_name, last_name, email, phone_number, created_at FROM owners WHERE owner_id = ?", [ownerId]);
         if (owner.length === 0) {
             return res.status(404).json({ success: false, message: "Owner not found." });
         }
@@ -70,5 +81,34 @@ export const deleteOwner = async (req, res) => {
     } catch (error) {
         console.error("Error deleting owner:", error);
         res.status(500).json({ success: false, message: "Error deleting owner.", error: error.message });
+    }
+};
+
+// Login owner
+export const loginOwner = async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        if (!email || !password) {
+            return res.status(400).json({ success: false, message: "Email and password are required." });
+        }
+
+        // Find the owner by email, this time including the password for comparison
+        const [owner] = await db.execute("SELECT * FROM owners WHERE email = ?", [email]);
+
+        if (owner.length === 0) {
+            return res.status(401).json({ success: false, message: "Invalid credentials." }); // Use a generic message
+        }
+
+        const storedOwner = owner[0];
+        const passwordMatch = await bcrypt.compare(password, storedOwner.password);
+
+        if (!passwordMatch) {
+            return res.status(401).json({ success: false, message: "Invalid credentials." });
+        }
+
+        res.status(200).json({ success: true, message: "Login successful.", owner_id: storedOwner.owner_id });
+    } catch (error) {
+        console.error("Error during owner login:", error);
+        res.status(500).json({ success: false, message: "Server error during login." });
     }
 };

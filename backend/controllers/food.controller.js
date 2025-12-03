@@ -24,7 +24,16 @@ export const createFood = async (req, res) => {
 export const getFoodById = async (req, res) => {
     const { foodId } = req.params;
     try {
-        const [food] = await db.execute("SELECT * FROM foods WHERE food_id = ?", [foodId]);
+        // Join with the restaurants table to include the restaurant's name
+        const query = `
+            SELECT 
+                f.*, 
+                r.name AS restaurant_name 
+            FROM foods f
+            JOIN restaurants r ON f.restaurant_id = r.restaurant_id
+            WHERE f.food_id = ?
+        `;
+        const [food] = await db.execute(query, [foodId]);
         if (food.length === 0) {
             return res.status(404).json({ success: false, message: "Food item not found." });
         }

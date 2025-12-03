@@ -1,14 +1,22 @@
 import db from '../config/db.config.js';
+import bcrypt from 'bcrypt';
+
+const saltRounds = 10;
 
 // Create a new customer
 export const createCustomer = async (req, res) => {
-    const { first_name, last_name, email, phone_number, current_latitude, current_longitude, preferred_budget_category } = req.body;
+    const { first_name, last_name, email, password, phone_number, current_latitude, current_longitude, preferred_budget_category } = req.body;
     try {
+        if (!password) {
+            return res.status(400).json({ success: false, message: "Password is required." });
+        }
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+
         const query = `
-            INSERT INTO customers (first_name, last_name, email, phone_number, current_latitude, current_longitude, preferred_budget_category) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO customers (first_name, last_name, email, password, phone_number, current_latitude, current_longitude, preferred_budget_category) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        const [result] = await db.execute(query, [first_name, last_name, email, phone_number, current_latitude, current_longitude, preferred_budget_category]);
+        const [result] = await db.execute(query, [first_name, last_name, email, hashedPassword, phone_number, current_latitude, current_longitude, preferred_budget_category]);
         res.status(201).json({ success: true, message: "Customer registered successfully.", customer_id: result.insertId });
     } catch (error) {
         console.error("Error creating customer:", error);
@@ -20,7 +28,8 @@ export const createCustomer = async (req, res) => {
 export const getCustomerById = async (req, res) => {
     const { customerId } = req.params;
     try {
-        const [customer] = await db.execute("SELECT * FROM customers WHERE customer_id = ?", [customerId]);
+        // Exclude password from the result
+        const [customer] = await db.execute("SELECT customer_id, first_name, last_name, email, phone_number, current_latitude, current_longitude, preferred_budget_category FROM customers WHERE customer_id = ?", [customerId]);
         if (customer.length === 0) {
             return res.status(404).json({ success: false, message: "Customer not found." });
         }
@@ -89,5 +98,34 @@ export const deleteCustomer = async (req, res) => {
     } catch (error) {
         console.error("Error deleting customer:", error);
         res.status(500).json({ success: false, message: "Error deleting customer.", error: error.message });
+    }
+};
+
+// Login customer
+export const loginCustomer = async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        if (!email || !password) {
+            return res.status(400).json({ success: false, message: "Email and password are required." });
+        }
+
+        // Find the customer by email, including the password for comparison
+        const [customer] = await db.execute("SELECT * FROM customers WHERE email = ?", [email]);
+
+        if (customer.length === 0) {
+            return res.status(401).json({ success: false, message: "Invalid credentials." });
+        }
+
+        const storedCustomer = customer[0];
+        const passwordMatch = await bcrypt.compare(password, storedCustomer.password);
+
+        if (!passwordMatch) {
+            return res.status(401).json({ success: false, message: "Invalid credentials." });
+        }
+
+        res.status(200).json({ success: true, message: "Login successful.", customer_id: storedCustomer.customer_id });
+    } catch (error) {
+        console.error("Error during customer login:", error);
+        res.status(500).json({ success: false, message: "Server error during login." });
     }
 };
