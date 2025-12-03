@@ -1,8 +1,10 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { UtensilsCrossed } from 'lucide-react';
 import OwnerDashboard from './pages/ownerHome.jsx';
 import OwnerLogin from './pages/OwnerLogin.jsx';
 import OwnerSignup from './pages/OwnerSignup.jsx';
+import HomePage from './pages/homepage.jsx';
+
 
 function App() {
   return (
@@ -19,7 +21,7 @@ function App() {
               
               <div className="flex gap-4">
                 <Link 
-                  to="/customer" 
+                  to="/home" 
                   className="px-4 py-2 text-gray-700 hover:text-blue-600 font-medium"
                 >
                   Customer
@@ -37,8 +39,9 @@ function App() {
 
         {/* Routes */}
         <Routes>
-          {/* <Route path="/" element={<HomePage />} />
-          <Route path="/customer" element={<CustomerPage />} /> */}
+          <Route path="/" element={<Navigate to="/home" />} />
+          <Route path="/home" element={<HomePage />} />
+          {/* <Route path="/customer" element={<CustomerPage />} />  */}
           <Route path="/owner-signup" element={<OwnerSignup />} />
           <Route path="/owner-login" element={<OwnerLogin />} />
           <Route path="/owner" element={<OwnerDashboard />} />
