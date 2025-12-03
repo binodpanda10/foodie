@@ -1,11 +1,7 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import dotenv from 'dotenv'; // Import dotenv
 import helmet from 'helmet'; // Import helmet
 import cors from 'cors';     // Import cors
-
-// Load environment variables from .env file immediately
-dotenv.config();
 
 // Require the mock DB config
 import db from './config/db.config.js'; 
