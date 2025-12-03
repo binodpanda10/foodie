@@ -10,6 +10,7 @@ const OwnerDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBudget, setSelectedBudget] = useState('All');
   const [restaurantId, setRestaurantId] = useState(null);
+  const [ownerId, setOwnerId] = useState(null);
   const navigate = useNavigate();
   const [currentFood, setCurrentFood] = useState({
     food_id: null, // This will be set dynamically
@@ -22,17 +23,28 @@ const OwnerDashboard = () => {
     is_vegan: false
   });
 
+  const [newRestaurant, setNewRestaurant] = useState({
+    name: '',
+    description: '',
+    latitude: '',
+    longitude: ''
+  });
+
   const API_BASE_URL = 'http://localhost:5000/api';
 
   useEffect(() => {
     // On component mount, check for owner info in localStorage
     const ownerData = localStorage.getItem('ownerData');
     if (ownerData) {
-      const { restaurant_id } = JSON.parse(ownerData);
+      const { owner_id, restaurant_id } = JSON.parse(ownerData);
+      setOwnerId(owner_id);
+
       if (restaurant_id) {
         setRestaurantId(restaurant_id);
         fetchFoods(restaurant_id);
       }
+      // If restaurant_id is null, the component will render the "Create Restaurant" form
+
     } else {
       // If no owner data, redirect to login
       alert('You must be logged in to view this page.');
@@ -62,7 +74,6 @@ const OwnerDashboard = () => {
       const response = await fetch(`${API_BASE_URL}/restaurants/${resId}/foods`); // Updated endpoint
       const data = await response.json();
       if (data.success) {
-        setFoods(data.foods || []); // Assuming the backend returns a 'foods' array
         setFoods(data.foods || []); 
       } else {
         console.error('Failed to fetch foods:', data.message);
@@ -70,28 +81,7 @@ const OwnerDashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching foods:', error);
-      setFoods([
-        {
-          food_id: 1,
-          name: 'Margherita Pizza',
-          description: 'Classic pizza with tomato and mozzarella',
-          price: 12.99,
-          budget_category: 'Affordable',
-          is_vegetarian: true,
-          is_vegan: false
-        },
-        {
-          food_id: 2,
-          name: 'Truffle Pasta',
-          description: 'Handmade pasta with black truffle',
-          price: 28.99,
-          budget_category: 'Premium',
-          is_vegetarian: true,
-          is_vegan: false
-        }
-      ]);
       alert(`Network Error: Could not fetch food data. Is the backend server running?`);
-      setFoods([]); // Clear food list on error
     }
   };
 
@@ -101,6 +91,47 @@ const OwnerDashboard = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+  };
+
+  const handleRestaurantInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewRestaurant(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateRestaurant = async (e) => {
+    e.preventDefault();
+    if (!newRestaurant.name || !newRestaurant.latitude || !newRestaurant.longitude) {
+      alert('Please fill in all required restaurant fields.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/restaurants`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newRestaurant, owner_id: ownerId })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        alert('Restaurant created successfully!');
+        const newRestaurantId = data.restaurant_id;
+
+        // Update localStorage with the new restaurant_id
+        const ownerData = JSON.parse(localStorage.getItem('ownerData'));
+        ownerData.restaurant_id = newRestaurantId;
+        localStorage.setItem('ownerData', JSON.stringify(ownerData));
+
+        // Update state to re-render the dashboard
+        setRestaurantId(newRestaurantId);
+        fetchFoods(newRestaurantId);
+      } else {
+        alert(`Error creating restaurant: ${data.message}`);
+      }
+    } catch (error) {
+      alert('An error occurred while creating the restaurant.');
+    }
   };
 
   const handleSubmit = async () => {
@@ -192,6 +223,66 @@ const OwnerDashboard = () => {
     localStorage.removeItem('ownerData');
     navigate('/owner-login'); // Adjust to your owner login route
   };
+
+  // Render this UI if the owner has no restaurant yet
+  if (!restaurantId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50 p-4">
+        <div className="max-w-2xl w-full bg-white rounded-xl shadow-2xl p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-800">Welcome, Owner!</h1>
+            <p className="text-gray-600 mt-2">Let's set up your restaurant to get you started.</p>
+          </div>
+          <form onSubmit={handleCreateRestaurant} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Restaurant Name *</label>
+              <input
+                type="text" name="name" required
+                value={newRestaurant.name} onChange={handleRestaurantInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea
+                name="description" rows="3"
+                value={newRestaurant.description} onChange={handleRestaurantInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Latitude *</label>
+                <input
+                  type="number" name="latitude" step="any" required
+                  placeholder="e.g., 34.0522"
+                  value={newRestaurant.latitude} onChange={handleRestaurantInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Longitude *</label>
+                <input
+                  type="number" name="longitude" step="any" required
+                  placeholder="e.g., -118.2437"
+                  value={newRestaurant.longitude} onChange={handleRestaurantInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+            </div>
+            <div className="flex gap-4 pt-4">
+              <button type="submit" className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                Create Restaurant
+              </button>
+              <button type="button" onClick={handleLogout} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-lg font-semibold transition-colors">
+                Logout
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
