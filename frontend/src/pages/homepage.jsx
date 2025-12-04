@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Star, Leaf, MapPin, Sparkles, TrendingUp, Users, Navigation, ShoppingCart } from 'lucide-react';
+import { Search, Filter, Star, Leaf, MapPin, Sparkles, TrendingUp, Users, Navigation, ShoppingCart, LogOut, UserPlus, LogIn } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Homepage = () => {
   const [foods, setFoods] = useState([]);
@@ -15,18 +16,31 @@ const Homepage = () => {
   const [collaborativeSuggestions, setCollaborativeSuggestions] = useState([]);
   const [personalizedSuggestions, setPersonalizedSuggestions] = useState([]);
   const [activeTab, setActiveTab] = useState('restaurants');
-  const [customerId] = useState(1);
+  const [customerId, setCustomerId] = useState(null);
   const [userLocation, setUserLocation] = useState({ lat: 27.7172, lng: 85.3240 });
   const [locationRadius, setLocationRadius] = useState(10);
   const [cart, setCart] = useState({});
+  const navigate = useNavigate();
 
   const API_BASE_URL = 'http://localhost:5000/api';
 
   useEffect(() => {
+    // Check for customer info in localStorage
+    const customerData = localStorage.getItem('customerData');
+    if (customerData) {
+      const { customer_id } = JSON.parse(customerData);
+      setCustomerId(customer_id);
+    }
+
     getUserLocation();
+  }, []);
+
+  useEffect(() => {
+    if (!customerId) return; // Don't fetch data if not logged in
+
     fetchNearbyRestaurants();
     fetchPersonalizedSuggestions();
-  }, []);
+  }, [customerId, userLocation, locationRadius]); // Re-fetch if location or customer changes
 
   useEffect(() => {
     if (selectedRestaurant === 'all') {
@@ -295,6 +309,12 @@ const Homepage = () => {
     return Object.values(cart).reduce((sum, qty) => sum + qty, 0);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('customerData');
+    setCustomerId(null);
+    navigate('/login');
+  };
+
   const RestaurantCard = ({ restaurant }) => (
     <div 
       onClick={() => handleRestaurantClick(restaurant)}
@@ -420,6 +440,31 @@ const Homepage = () => {
     );
   };
 
+  if (!customerId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-2xl p-8 text-center">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome to Foodie!</h1>
+          <p className="text-gray-600 mb-8">Please sign in or create an account to discover amazing food.</p>
+          <div className="space-y-4">
+            <Link to="/login">
+              <button className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors">
+                <LogIn size={20} />
+                Sign In
+              </button>
+            </Link>
+            <Link to="/signup">
+              <button className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors">
+                <UserPlus size={20} />
+                Create Account
+              </button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
       {/* Header - Same as Owner Dashboard */}
@@ -441,6 +486,13 @@ const Homepage = () => {
                   <span className="font-semibold">{getTotalItems()} items • ${getCartTotal().toFixed(2)}</span>
                 </div>
               )}
+              <button
+                onClick={handleLogout}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              >
+                <LogOut size={18} /> 
+               Logout
+              </button>
             </div>
           </div>
         </div>

@@ -5,7 +5,17 @@ const saltRounds = 10;
 
 // Create a new customer
 export const createCustomer = async (req, res) => {
-    const { first_name, last_name, email, password, phone_number, current_latitude, current_longitude, preferred_budget_category } = req.body;
+    // Destructure the body and provide default null values for optional fields.
+    const { 
+        first_name, 
+        last_name, 
+        email, 
+        password, 
+        phone_number, 
+        current_latitude = null, // Default to null if not provided
+        current_longitude = null, // Default to null if not provided
+        preferred_budget_category = null // Default to null if not provided
+    } = req.body;
     try {
         if (!password) {
             return res.status(400).json({ success: false, message: "Password is required." });

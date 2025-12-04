@@ -4,7 +4,8 @@ import OwnerDashboard from './pages/ownerHome.jsx';
 import OwnerLogin from './pages/OwnerLogin.jsx';
 import OwnerSignup from './pages/OwnerSignup.jsx';
 import HomePage from './pages/homepage.jsx';
-
+import CustomerLogin from './pages/CustomerLogin';
+import CustomerSignup from './pages/CustomerSignup';
 
 function App() {
   return (
@@ -45,6 +46,8 @@ function App() {
           <Route path="/owner-signup" element={<OwnerSignup />} />
           <Route path="/owner-login" element={<OwnerLogin />} />
           <Route path="/owner" element={<OwnerDashboard />} />
+          <Route path="/login" element={<CustomerLogin />} />
+          <Route path="/signup" element={<CustomerSignup />} />
         </Routes>
       </div>
     </Router>
