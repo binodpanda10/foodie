@@ -2,6 +2,8 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import helmet from 'helmet'; // Import helmet
 import cors from 'cors';     // Import cors
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Require the mock DB config
 import db from './config/db.config.js'; 
@@ -10,9 +12,12 @@ import db from './config/db.config.js';
 import ownerRoutes from './routes/owner.routes.js';
 import customerRoutes from './routes/customer.routes.js';
 import restaurantRoutes from './routes/restaurant.routes.js';
-import foodRoutes from './routes/food.routes.js';
+import allFoodsRoutes from './routes/allFoods.routes.js'; // Import the new route
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Use port from environment variable, default to 3000
 const PORT = process.env.PORT || 5000; 
 
@@ -26,6 +31,9 @@ app.use(cors({
 // --- Body Parsing Middleware ---
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// --- Static File Serving ---
+app.use(express.static(path.join(__dirname, 'public')));
 
 // --- Test Database Connection ---
 db.getConnection()
@@ -52,7 +60,7 @@ app.get('/', (req, res) => {
 app.use('/api/owners', ownerRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/restaurants', restaurantRoutes);
-app.use('/api/foods', foodRoutes);
+app.use('/api/foods', allFoodsRoutes); // Use the new route for /api/foods
 
 
 // Start the server

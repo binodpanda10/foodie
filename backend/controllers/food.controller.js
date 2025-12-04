@@ -2,17 +2,24 @@ import db from '../config/db.config.js';
 
 // Create a new food item
 export const createFood = async (req, res) => {
-    const { restaurant_id, name, description, price, budget_category, is_vegetarian, is_vegan } = req.body;
+    // Get restaurant_id from URL params for security and correctness
+    const { restaurantId: restaurant_id } = req.params; 
+    const { name, description, price, budget_category, is_vegetarian, is_vegan } = req.body;
     try {
         if (!['Affordable', 'Mid-Range', 'Premium'].includes(budget_category)) {
             return res.status(400).json({ success: false, message: "Invalid budget category." });
         }
         
+        const photo_url = req.file ? `/uploads/${req.file.filename}` : null;
+
+        const isVegetarianInt = is_vegetarian === 'true' || is_vegetarian === true ? 1 : 0;
+        const isVeganInt = is_vegan === 'true' || is_vegan === true ? 1 : 0;
+
         const query = `
-            INSERT INTO foods (restaurant_id, name, description, price, budget_category, is_vegetarian, is_vegan) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO foods (restaurant_id, name, description, price, budget_category, is_vegetarian, is_vegan, photo_url) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        const [result] = await db.execute(query, [restaurant_id, name, description, price, budget_category, is_vegetarian, is_vegan]);
+        const [result] = await db.execute(query, [restaurant_id, name, description, price, budget_category, isVegetarianInt, isVeganInt, photo_url]);
         res.status(201).json({ success: true, message: "Food item created successfully.", food_id: result.insertId });
     } catch (error) {
         console.error("Error creating food item:", error);
@@ -48,37 +55,22 @@ export const getFoodById = async (req, res) => {
 export const getFoodsByRestaurant = async (req, res) => {
     const { restaurantId } = req.params;
     try {
-        const query = "SELECT * FROM foods WHERE restaurant_id = ?";
-        const [foods] = await db.execute(query, [restaurantId]);
-        // Use a consistent response format
-        res.status(200).json({ success: true, count: foods.length, foods: foods });
+        // Fetch restaurant details first
+        const [restaurantResult] = await db.execute("SELECT * FROM restaurants WHERE restaurant_id = ?", [restaurantId]);
+        if (restaurantResult.length === 0) {
+            return res.status(404).json({ success: false, message: "Restaurant not found." });
+        }
+        const restaurant = restaurantResult[0];
+
+        // Then fetch the foods for that restaurant
+        const foodsQuery = "SELECT * FROM foods WHERE restaurant_id = ?";
+        const [foods] = await db.execute(foodsQuery, [restaurantId]);
+        
+        // Return both the restaurant info and its foods
+        res.status(200).json({ success: true, restaurant: restaurant, foods: foods });
     } catch (error) {
         console.error("Error fetching food items for restaurant:", error);
         res.status(500).json({ success: false, message: "Error fetching food items.", error: error.message });
-    }
-};
-
-
-// Update food item details
-export const updateFood = async (req, res) => {
-    // Now we get both restaurantId and foodId from the URL params for security
-    const { restaurantId, foodId } = req.params;
-    const { name, description, price, budget_category, is_vegetarian, is_vegan } = req.body;
-    try {
-        const query = `
-            UPDATE foods 
-            SET name = ?, description = ?, price = ?, budget_category = ?, is_vegetarian = ?, is_vegan = ? 
-            WHERE food_id = ? AND restaurant_id = ?
-        `;
-        const [result] = await db.execute(query, [name, description, price, budget_category, is_vegetarian, is_vegan, foodId, restaurantId]);
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: "Food item not found or no changes made." });
-        }
-        res.status(200).json({ success: true, message: "Food item updated successfully." });
-    } catch (error) {
-        console.error("Error updating food item:", error);
-        res.status(500).json({ success: false, message: "Error updating food item.", error: error.message });
     }
 };
 
@@ -101,6 +93,35 @@ export const deleteFood = async (req, res) => {
     }
 };
 
+// Update food item details
+export const updateFood = async (req, res) => {
+    // Now we get both restaurantId and foodId from the URL params for security
+    const { restaurantId, foodId } = req.params;
+    const { name, description, price, budget_category, is_vegetarian, is_vegan } = req.body;
+    try {
+        // Check for a new file upload
+        const photo_url = req.file ? `/uploads/${req.file.filename}` : req.body.photo_url;
+
+        const isVegetarianInt = is_vegetarian === 'true' || is_vegetarian === true ? 1 : 0;
+        const isVeganInt = is_vegan === 'true' || is_vegan === true ? 1 : 0;
+
+        const query = `
+            UPDATE foods 
+            SET name = ?, description = ?, price = ?, budget_category = ?, is_vegetarian = ?, is_vegan = ?, photo_url = ?
+            WHERE food_id = ? AND restaurant_id = ?
+        `;
+        // Note: You might want to delete the old photo from the filesystem here
+        const [result] = await db.execute(query, [name, description, price, budget_category, isVegetarianInt, isVeganInt, photo_url, foodId, restaurantId]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: "Food item not found or no changes made." });
+        }
+        res.status(200).json({ success: true, message: "Food item updated successfully." });
+    } catch (error) {
+        console.error("Error updating food item:", error);
+        res.status(500).json({ success: false, message: "Error updating food item.", error: error.message });
+    }
+};
 
 // *** ALGORITHM 2: Budget-Based Recommendation Algorithm ***
 export const getFoodsByBudget = async (req, res) => {

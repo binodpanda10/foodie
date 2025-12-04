@@ -8,8 +8,11 @@ export const createRestaurant = async (req, res) => {
             return res.status(400).json({ success: false, message: "Invalid latitude or longitude." });
         }
 
-        const query = "INSERT INTO restaurants (owner_id, name, description, latitude, longitude) VALUES (?, ?, ?, ?, ?)";
-        const [result] = await db.execute(query, [owner_id, name, description, latitude, longitude]);
+        // Construct the photo URL from the uploaded file
+        const photo_url = req.file ? `/uploads/${req.file.filename}` : null;
+
+        const query = "INSERT INTO restaurants (owner_id, name, description, latitude, longitude, photo_url) VALUES (?, ?, ?, ?, ?, ?)";
+        const [result] = await db.execute(query, [owner_id, name, description, latitude, longitude, photo_url]);
         res.status(201).json({ success: true, message: "Restaurant created successfully.", restaurant_id: result.insertId });
     } catch (error) {
         console.error("Error creating restaurant:", error);
@@ -21,7 +24,7 @@ export const createRestaurant = async (req, res) => {
 export const getRestaurantById = async (req, res) => {
     const { restaurantId } = req.params;
     try {
-        const [restaurant] = await db.execute("SELECT * FROM restaurants WHERE restaurant_id = ?", [restaurantId]);
+        const [restaurant] = await db.execute("SELECT restaurant_id, owner_id, name, description, latitude, longitude, photo_url FROM restaurants WHERE restaurant_id = ?", [restaurantId]);
         if (restaurant.length === 0) {
             return res.status(404).json({ success: false, message: "Restaurant not found." });
         }
@@ -87,6 +90,7 @@ export const getNearbyRestaurants = async (req, res) => {
                 description, 
                 latitude, 
                 longitude, 
+                photo_url,
                 -- Calculate distance and convert from meters to kilometers
                 (ST_Distance_Sphere(
                     POINT(longitude, latitude),    -- Restaurant coordinates (Lng, Lat order)

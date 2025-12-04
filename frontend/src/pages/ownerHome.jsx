@@ -22,6 +22,7 @@ const OwnerDashboard = () => {
     is_vegetarian: false,
     is_vegan: false
   });
+  const [foodPhoto, setFoodPhoto] = useState(null);
 
   const [newRestaurant, setNewRestaurant] = useState({
     name: '',
@@ -29,8 +30,10 @@ const OwnerDashboard = () => {
     latitude: '',
     longitude: ''
   });
+  const [restaurantPhoto, setRestaurantPhoto] = useState(null);
 
   const API_BASE_URL = 'http://localhost:5000/api';
+  const SERVER_BASE_URL = 'http://localhost:5000';
 
   useEffect(() => {
     // On component mount, check for owner info in localStorage
@@ -98,6 +101,10 @@ const OwnerDashboard = () => {
     setNewRestaurant(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleRestaurantFileChange = (e) => {
+    setRestaurantPhoto(e.target.files[0]);
+  };
+
   const handleCreateRestaurant = async (e) => {
     e.preventDefault();
     if (!newRestaurant.name || !newRestaurant.latitude || !newRestaurant.longitude) {
@@ -105,12 +112,18 @@ const OwnerDashboard = () => {
       return;
     }
 
+    const formData = new FormData();
+    formData.append('name', newRestaurant.name);
+    formData.append('description', newRestaurant.description);
+    formData.append('latitude', newRestaurant.latitude);
+    formData.append('longitude', newRestaurant.longitude);
+    formData.append('owner_id', ownerId);
+    if (restaurantPhoto) {
+      formData.append('photo', restaurantPhoto);
+    }
+
     try {
-      const response = await fetch(`${API_BASE_URL}/restaurants`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newRestaurant, owner_id: ownerId })
-      });
+      const response = await fetch(`${API_BASE_URL}/restaurants`, { method: 'POST', body: formData });
 
       const data = await response.json();
 
@@ -140,20 +153,23 @@ const OwnerDashboard = () => {
       return;
     }
 
+    const formData = new FormData();
+    Object.keys(currentFood).forEach(key => {
+      formData.append(key, currentFood[key]);
+    });
+    if (foodPhoto) {
+      formData.append('photo', foodPhoto);
+    } else if (editMode && currentFood.photo_url) {
+      formData.append('photo_url', currentFood.photo_url);
+    }
+
+    const url = editMode
+      ? `${API_BASE_URL}/restaurants/${restaurantId}/foods/${currentFood.food_id}`
+      : `${API_BASE_URL}/restaurants/${restaurantId}/foods`;
+    const method = editMode ? 'PUT' : 'POST';
+
     try {
-      const url = editMode
-        ? `${API_BASE_URL}/restaurants/${restaurantId}/foods/${currentFood.food_id}`
-        : `${API_BASE_URL}/restaurants/${restaurantId}/foods`;
-
-      const method = editMode ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ...currentFood, restaurant_id: restaurantId })
-      });
+      const response = await fetch(url, { method, body: formData });
 
       const data = await response.json();
 
@@ -173,6 +189,7 @@ const OwnerDashboard = () => {
 
   const handleEdit = (food) => {
     setCurrentFood(food);
+    setFoodPhoto(null);
     setEditMode(true);
     setShowModal(true);
   };
@@ -210,6 +227,7 @@ const OwnerDashboard = () => {
       is_vegetarian: false,
       is_vegan: false
     });
+    setFoodPhoto(null);
     setEditMode(false);
     setShowModal(true);
   };
@@ -269,6 +287,13 @@ const OwnerDashboard = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                 />
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Restaurant Photo</label>
+              <input
+                type="file" name="photo" onChange={handleRestaurantFileChange}
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+              />
             </div>
             <div className="flex gap-4 pt-4">
               <button type="submit" className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-semibold transition-colors">
@@ -342,6 +367,17 @@ const OwnerDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredFoods.map((food) => (
             <div key={food.food_id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+              {/* Use a container with a fixed aspect ratio to ensure visibility */}
+              {food.photo_url && (
+                <div className="w-full aspect-video bg-gray-200">
+                  <img 
+                    src={`${SERVER_BASE_URL}${food.photo_url}`} 
+                    alt={food.name} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.target.style.display = 'none'; }} // Hide broken images
+                  />
+                </div>
+              )}
               <div className="p-6">
                 <div className="flex justify-between items-start mb-3">
                   <h3 className="text-xl font-semibold text-gray-800">{food.name}</h3>
@@ -357,10 +393,10 @@ const OwnerDashboard = () => {
                 <p className="text-gray-600 text-sm mb-4 line-clamp-2">{food.description}</p>
 
                 <div className="flex items-center gap-2 mb-4">
-                  {food.is_vegetarian && (
+                  {(food.is_vegetarian === 1 || food.is_vegetarian === true) && (
                     <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">Vegetarian</span>
                   )}
-                  {food.is_vegan && (
+                  {(food.is_vegan === 1 || food.is_vegan === true) && (
                     <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">Vegan</span>
                   )}
                 </div>
@@ -465,6 +501,18 @@ const OwnerDashboard = () => {
                       <option value="Premium">Premium</option>
                     </select>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Food Photo
+                  </label>
+                  <input
+                    type="file"
+                    name="photo"
+                    onChange={(e) => setFoodPhoto(e.target.files[0])}
+                    className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+                  />
                 </div>
 
                 <div className="flex gap-6">

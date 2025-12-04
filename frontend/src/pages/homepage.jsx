@@ -23,6 +23,7 @@ const Homepage = () => {
   const navigate = useNavigate();
 
   const API_BASE_URL = 'http://localhost:5000/api';
+  const SERVER_BASE_URL = 'http://localhost:5000';
 
   useEffect(() => {
     // Check for customer info in localStorage
@@ -104,20 +105,16 @@ const Homepage = () => {
 
   const fetchAllFoodsFromAllRestaurants = async () => {
     try {
-      const allFoods = [];
-      for (const restaurant of restaurants) { // This is inefficient but respects the "no backend changes" rule.
-        const response = await fetch(`${API_BASE_URL}/restaurants/${restaurant.restaurant_id}/foods`);
-        const data = await response.json();
-        if (data.success) {
-          const foodsWithRestaurant = data.foods.map(food => ({
-            ...food,
-            restaurant_name: restaurant.name,
-            distance_km: restaurant.distance_km
-          }));
-          allFoods.push(...foodsWithRestaurant);
-        }
+      // Use the new, efficient endpoint
+      const response = await fetch(`${API_BASE_URL}/foods`);
+      const data = await response.json();
+      if (data.success) {
+        // The backend now provides all necessary data, including photo_url
+        setFoods(data.foods || []);
+      } else {
+        console.error('Failed to fetch all foods:', data.message);
+        setMockFoods();
       }
-      setFoods(allFoods);
     } catch (error) {
       console.error('Error fetching all foods:', error);
       setMockFoods();
@@ -315,11 +312,193 @@ const Homepage = () => {
     navigate('/login');
   };
 
-  const RestaurantCard = ({ restaurant }) => (
+//   const RestaurantCard = ({ restaurant }) => {
+//     // Log the restaurant's photo URL to the console for debugging
+//     console.log(`Restaurant: ${restaurant.name}, Image URL: ${SERVER_BASE_URL}${restaurant.photo_url}`);
+//     return (
+//       <div 
+//       onClick={() => handleRestaurantClick(restaurant)}
+//       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all cursor-pointer transform hover:scale-105"
+//     >
+//       {/* Use a container with a fixed aspect ratio to prevent layout shifts and ensure visibility */}
+//       {restaurant.photo_url && (
+//         <div className="w-full aspect-video bg-gray-200">
+//           <img 
+//             src={`${SERVER_BASE_URL}${restaurant.photo_url}`} 
+//             alt={restaurant.name} 
+//             className="w-full h-full object-cover"
+//             onError={(e) => { e.target.style.display = 'none'; }} // Hide broken images
+//           />
+//         </div>
+//       )}
+//       <div className="p-6">
+//         <div className="flex justify-between items-start mb-3">
+//           <h3 className="text-xl font-semibold text-gray-800">{restaurant.name}</h3>
+//           <div className="flex items-center gap-1 text-sm text-orange-600 font-semibold">
+//             <MapPin size={16} />
+//             {restaurant.distance_km.toFixed(1)} km
+//           </div>
+//         </div>
+
+//         <p className="text-gray-600 text-sm mb-4">{restaurant.description}</p>
+
+//         <div className="flex items-center justify-between">
+//           <div className="text-sm text-gray-500">
+//             <MapPin size={14} className="inline mr-1" />
+//             Lat: {Number(restaurant.latitude).toFixed(4)}, Lng: {Number(restaurant.longitude).toFixed(4)}
+//           </div>
+//           <button className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition-colors">
+//             View Menu
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//     );
+//   };
+
+// const FoodCard = ({ food, onClick, showSuggestionScore = false }) => {
+//   const quantity = cart[food.food_id] || 0;
+  
+//   // Log the food item's photo URL to the console for debugging, handling null values gracefully.
+//   console.log(`Food: ${food.name}, Image URL: ${food.photo_url ? SERVER_BASE_URL + food.photo_url : 'None'}`);
+
+//   return (
+//     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all">
+//       {/* Only render image container if photo_url exists */}
+//       {food.photo_url && (
+//         <div className="w-full aspect-video bg-gray-200">
+//           <img 
+//             src={`${SERVER_BASE_URL}${food.photo_url}`} 
+//             alt={food.name} 
+//             className="w-full h-full object-cover"
+//             onError={(e) => {
+//               // Hide image on error and show placeholder
+//               e.target.style.display = 'none';
+//               e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-200"><svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></div>';
+//             }}
+//           />
+//         </div>
+//       )}
+      
+//       <div className="p-6">
+//         <div 
+//           onClick={() => onClick && onClick(food)}
+//           className={onClick ? 'cursor-pointer' : ''}
+//         >
+//           <div className="flex justify-between items-start mb-3">
+//             <h3 className="text-xl font-semibold text-gray-800">{food.name}</h3>
+//             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+//               food.budget_category === 'Affordable' ? 'bg-green-100 text-green-800' :
+//               food.budget_category === 'Mid-Range' ? 'bg-blue-100 text-blue-800' :
+//               'bg-purple-100 text-purple-800'
+//             }`}>
+//               {food.budget_category}
+//             </span>
+//           </div>
+
+//           <p className="text-gray-600 text-sm mb-3 line-clamp-2">{food.description}</p>
+
+//           {food.restaurant_name && (
+//             <div className="flex items-center gap-2 mb-3 text-sm text-gray-600">
+//               <MapPin size={14} className="text-orange-500" />
+//               <span className="font-medium">{food.restaurant_name}</span>
+//               {food.distance_km && (
+//                 <span className="text-orange-600 font-semibold">• {food.distance_km.toFixed(1)} km</span>
+//               )}
+//             </div>
+//           )}
+
+//           <div className="flex items-center gap-2 mb-4">
+//             {(food.is_vegetarian === 1 || food.is_vegetarian === true) && (
+//               <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs flex items-center gap-1">
+//                 <Leaf size={12} />
+//                 Veg
+//               </span>
+//             )}
+//             {(food.is_vegan === 1 || food.is_vegan === true) && (
+//               <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs flex items-center gap-1">
+//                 <Leaf size={12} />
+//                 Vegan
+//               </span>
+//             )}
+//           </div>
+
+//           <div className="flex justify-between items-center mb-4">
+//             <span className="text-2xl font-bold text-orange-600">${food.price}</span>
+//             {showSuggestionScore && food.suggestion_score && (
+//               <div className="flex items-center gap-1 text-sm text-gray-600">
+//                 <Star size={16} className="text-yellow-500 fill-yellow-500" />
+//                 <span>{food.suggestion_score} matches</span>
+//               </div>
+//             )}
+//             {food.average_rating && (
+//               <div className="flex items-center gap-1 text-sm text-gray-600">
+//                 <Star size={16} className="text-yellow-500 fill-yellow-500" />
+//                 <span>{Number(food.average_rating).toFixed(1)}</span>
+//               </div>
+//             )}
+//           </div>
+//         </div>
+
+//         {/* Quantity Controls */}
+//         <div className="flex items-center gap-3 mb-3">
+//           <button
+//             onClick={() => updateQuantity(food.food_id, -1)}
+//             disabled={quantity === 0}
+//             className="w-10 h-10 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg transition-colors"
+//           >
+//             −
+//           </button>
+//           <span className="text-xl font-semibold min-w-[40px] text-center">{quantity}</span>
+//           <button
+//             onClick={() => updateQuantity(food.food_id, 1)}
+//             className="w-10 h-10 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-bold text-lg transition-colors"
+//           >
+//             +
+//           </button>
+//         </div>
+
+//         {/* Order Now Button */}
+//         <button
+//           onClick={() => handleOrderNow(food)}
+//           disabled={quantity === 0}
+//           className="w-full py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-green-500 hover:bg-green-600 text-white"
+//         >
+//           {quantity === 0 ? 'Add to Cart First' : `Order Now - $${(food.price * quantity).toFixed(2)}`}
+//         </button>
+//       </div>
+//     </div>
+//   );
+// };
+
+const RestaurantCard = ({ restaurant }) => {
+  // Only create URL if photo_url exists AND is not null
+  const imageUrl = (restaurant.photo_url && restaurant.photo_url !== 'null') 
+    ? `${SERVER_BASE_URL}${restaurant.photo_url}` 
+    : null;
+
+  return (
     <div 
       onClick={() => handleRestaurantClick(restaurant)}
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all cursor-pointer transform hover:scale-105"
     >
+      {imageUrl ? (
+        <div className="w-full h-48 bg-gray-200">
+          <img 
+            src={imageUrl}
+            alt={restaurant.name} 
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-200"><span class="text-gray-400">Image unavailable</span></div>';
+            }}
+          />
+        </div>
+      ) : (
+        <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+          <span className="text-gray-400">No image</span>
+        </div>
+      )}
+      
       <div className="p-6">
         <div className="flex justify-between items-start mb-3">
           <h3 className="text-xl font-semibold text-gray-800">{restaurant.name}</h3>
@@ -343,102 +522,126 @@ const Homepage = () => {
       </div>
     </div>
   );
+};
 
-  const FoodCard = ({ food, onClick, showSuggestionScore = false }) => {
-    const quantity = cart[food.food_id] || 0;
-    
-    return (
-      <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all">
-        <div className="p-6">
-          <div 
-            onClick={() => onClick && onClick(food)}
-            className={onClick ? 'cursor-pointer' : ''}
-          >
-            <div className="flex justify-between items-start mb-3">
-              <h3 className="text-xl font-semibold text-gray-800">{food.name}</h3>
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                food.budget_category === 'Affordable' ? 'bg-green-100 text-green-800' :
-                food.budget_category === 'Mid-Range' ? 'bg-blue-100 text-blue-800' :
-                'bg-purple-100 text-purple-800'
-              }`}>
-                {food.budget_category}
-              </span>
+const FoodCard = ({ food, onClick, showSuggestionScore = false }) => {
+  const quantity = cart[food.food_id] || 0;
+  
+  // Only create URL if photo_url exists AND is not null
+  const imageUrl = (food.photo_url && food.photo_url !== 'null') 
+    ? `${SERVER_BASE_URL}${food.photo_url}` 
+    : null;
+
+  return (
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all">
+      {imageUrl ? (
+        <div className="w-full aspect-video bg-gray-200">
+          <img 
+            src={imageUrl}
+            alt={food.name} 
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-200"><span class="text-gray-400">Image unavailable</span></div>';
+            }}
+          />
+        </div>
+      ) : (
+        <div className="w-full aspect-video bg-gray-200 flex items-center justify-center">
+          <span className="text-gray-400">No image</span>
+        </div>
+      )}
+      
+      <div className="p-6">
+        {/* Rest of the FoodCard code stays the same */}
+        <div 
+          onClick={() => onClick && onClick(food)}
+          className={onClick ? 'cursor-pointer' : ''}
+        >
+          <div className="flex justify-between items-start mb-3">
+            <h3 className="text-xl font-semibold text-gray-800">{food.name}</h3>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              food.budget_category === 'Affordable' ? 'bg-green-100 text-green-800' :
+              food.budget_category === 'Mid-Range' ? 'bg-blue-100 text-blue-800' :
+              'bg-purple-100 text-purple-800'
+            }`}>
+              {food.budget_category}
+            </span>
+          </div>
+
+          <p className="text-gray-600 text-sm mb-3 line-clamp-2">{food.description}</p>
+
+          {food.restaurant_name && (
+            <div className="flex items-center gap-2 mb-3 text-sm text-gray-600">
+              <MapPin size={14} className="text-orange-500" />
+              <span className="font-medium">{food.restaurant_name}</span>
+              {food.distance_km && (
+                <span className="text-orange-600 font-semibold">• {food.distance_km.toFixed(1)} km</span>
+              )}
             </div>
+          )}
 
-            <p className="text-gray-600 text-sm mb-3 line-clamp-2">{food.description}</p>
+          <div className="flex items-center gap-2 mb-4">
+            {(food.is_vegetarian === 1 || food.is_vegetarian === true) && (
+              <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs flex items-center gap-1">
+                <Leaf size={12} />
+                Veg
+              </span>
+            )}
+            {(food.is_vegan === 1 || food.is_vegan === true) && (
+              <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs flex items-center gap-1">
+                <Leaf size={12} />
+                Vegan
+              </span>
+            )}
+          </div>
 
-            {food.restaurant_name && (
-              <div className="flex items-center gap-2 mb-3 text-sm text-gray-600">
-                <MapPin size={14} className="text-orange-500" />
-                <span className="font-medium">{food.restaurant_name}</span>
-                {food.distance_km && (
-                  <span className="text-orange-600 font-semibold">• {food.distance_km.toFixed(1)} km</span>
-                )}
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-2xl font-bold text-orange-600">${food.price}</span>
+            {showSuggestionScore && food.suggestion_score && (
+              <div className="flex items-center gap-1 text-sm text-gray-600">
+                <Star size={16} className="text-yellow-500 fill-yellow-500" />
+                <span>{food.suggestion_score} matches</span>
               </div>
             )}
-
-            <div className="flex items-center gap-2 mb-4">
-              {(food.is_vegetarian === 1 || food.is_vegetarian === true) && (
-                <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs flex items-center gap-1">
-                  <Leaf size={12} />
-                  Veg
-                </span>
-              )}
-              {(food.is_vegan === 1 || food.is_vegan === true) && (
-                <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs flex items-center gap-1">
-                  <Leaf size={12} />
-                  Vegan
-                </span>
-              )}
-            </div>
-
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-2xl font-bold text-orange-600">${food.price}</span>
-              {showSuggestionScore && food.suggestion_score && (
-                <div className="flex items-center gap-1 text-sm text-gray-600">
-                  <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                  <span>{food.suggestion_score} matches</span>
-                </div>
-              )}
-              {food.average_rating && (
-                <div className="flex items-center gap-1 text-sm text-gray-600">
-                  <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                  <span>{Number(food.average_rating).toFixed(1)}</span>
-                </div>
-              )}
-            </div>
+            {food.average_rating && (
+              <div className="flex items-center gap-1 text-sm text-gray-600">
+                <Star size={16} className="text-yellow-500 fill-yellow-500" />
+                <span>{Number(food.average_rating).toFixed(1)}</span>
+              </div>
+            )}
           </div>
+        </div>
 
-          {/* Quantity Controls */}
-          <div className="flex items-center gap-3 mb-3">
-            <button
-              onClick={() => updateQuantity(food.food_id, -1)}
-              disabled={quantity === 0}
-              className="w-10 h-10 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg transition-colors"
-            >
-              −
-            </button>
-            <span className="text-xl font-semibold min-w-[40px] text-center">{quantity}</span>
-            <button
-              onClick={() => updateQuantity(food.food_id, 1)}
-              className="w-10 h-10 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-bold text-lg transition-colors"
-            >
-              +
-            </button>
-          </div>
-
-          {/* Order Now Button */}
+        <div className="flex items-center gap-3 mb-3">
           <button
-            onClick={() => handleOrderNow(food)}
+            onClick={() => updateQuantity(food.food_id, -1)}
             disabled={quantity === 0}
-            className="w-full py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-green-500 hover:bg-green-600 text-white"
+            className="w-10 h-10 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg transition-colors"
           >
-            {quantity === 0 ? 'Add to Cart First' : `Order Now - ${(food.price * quantity).toFixed(2)}`}
+            −
+          </button>
+          <span className="text-xl font-semibold min-w-[40px] text-center">{quantity}</span>
+          <button
+            onClick={() => updateQuantity(food.food_id, 1)}
+            className="w-10 h-10 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-bold text-lg transition-colors"
+          >
+            +
           </button>
         </div>
+
+        <button
+          onClick={() => handleOrderNow(food)}
+          disabled={quantity === 0}
+          className="w-full py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-green-500 hover:bg-green-600 text-white"
+        >
+          {quantity === 0 ? 'Add to Cart First' : `Order Now - $${(food.price * quantity).toFixed(2)}`}
+        </button>
       </div>
-    );
-  };
+    </div>
+  );
+};
+
+
 
   if (!customerId) {
     return (
