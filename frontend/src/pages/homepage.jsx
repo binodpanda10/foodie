@@ -730,7 +730,7 @@ const FoodCard = ({ food, onClick, showSuggestionScore = false }) => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Tabs */}
+        {/* Tab */}
         <div className="mb-8">
           <div className="flex gap-2 overflow-x-auto pb-2">
             <button
