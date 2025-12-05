@@ -670,8 +670,7 @@ const FoodCard = ({ food, onClick, showSuggestionScore = false }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
-      {/* Header - Same as Owner Dashboard */}
-      <div className="bg-white shadow-md">
+      <div className="header bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
             <div>
