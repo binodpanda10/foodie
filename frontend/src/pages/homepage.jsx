@@ -711,7 +711,7 @@ const FoodCard = ({ food, onClick, showSuggestionScore = false }) => {
                 placeholder="Search for restaurants or food items..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-14 pr-6 py-4 rounded-lg text-lg focus:ring-4 focus:ring-orange-300 focus:outline-none shadow-lg"
+                className="w-full pl-14 bg-white pr-6 py-4 rounded-lg text-lg focus:ring-4 focus:ring-orange-300 focus:outline-none shadow-lg"
               />
             </div>
           </div>
@@ -719,13 +719,14 @@ const FoodCard = ({ food, onClick, showSuggestionScore = false }) => {
       </div>
 
       {/* Banner Section */}
-      <div className="bg-gradient-to-r from-orange-400 to-red-400 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 text-center">
+      <div className=" text-white pb-12">
+        {/* <div className="max-w-7xl mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold mb-3">Personalized Food Recommendations</h2>
           <p className="text-xl text-orange-100">
             Powered by smart algorithms • Budget-friendly options • Complementary pairings
           </p>
-        </div>
+        </div> */}
+        <img src="../banner.jpg" alt="food banner" className="w-full h-full object-cover"/>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
